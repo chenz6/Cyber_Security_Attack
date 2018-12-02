@@ -84,4 +84,4 @@ Spawning a privileged shell
 
 8.
 cat flag
-cs519{Expl0it1ng_eBP}
+cs519{XXXXXXXXXXXXXXXXXX}
