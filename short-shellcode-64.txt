@@ -1,0 +1,11 @@
+151       push $0x41
+152       push %rsp
+153       pop %rdi
+154       push $0x3b
+155       pop %rax
+156       cltd
+157       push %rdx
+158       pop %rsi
+159        syscall
+160 
+
